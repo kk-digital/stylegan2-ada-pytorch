@@ -18,7 +18,6 @@
 
 ## Edits made to this repo
 
-* **Fakes .jpg**: save yourself a ton of space with fakes during training saved as .jpg instead of .png
 * **Multiple interpolation options**: use `--process="interpolation"`, see `--help` for more options
 * **Easing options for interpolations**: see `--help` for more (this would be a great place for new coders to build additional feautures/options)
 * **Vertical Mirroring**: use `--mirrory=True` to flip training set top to bottom (fixed, thanks [Diego](https://github.com/PDillis/stylegan2-ada-pytorch))
