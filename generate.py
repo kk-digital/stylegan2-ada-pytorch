@@ -21,6 +21,7 @@ import PIL.Image
 import torch
 
 import legacy
+import functools
 
 from opensimplex import OpenSimplex
 
@@ -56,7 +57,7 @@ def circularloop(nf, d, seed, seeds):
         latents_a = rnd.randn(1, 512)
         latents_b = rnd.randn(1, 512)
         latents_c = rnd.randn(1, 512)
-    elif(len(seeds) is not 3):
+    elif(len(seeds) != 3):
         assert('Must choose exactly 3 seeds!')
     else:
         latents_a = np.random.RandomState(int(seeds[0])).randn(1, 512)
@@ -248,7 +249,7 @@ def slerp(t, v0, v1, DOT_THRESHOLD=0.9995):
     s0 = np.sin(theta_0 - theta_t) / sin_theta_0
     s1 = sin_theta_t / sin_theta_0
     v2 = s0 * v0_copy + s1 * v1_copy
-    return torch.from_numpy(v2).to("cuda")
+    return torch.from_numpy(v2).to("cuda" if torch.cuda.is_available() else "cpu")
 
 def slerp_interpolate(zs, steps):
     out = []
@@ -402,10 +403,15 @@ def generate_images(
     # lmask = torch.from_numpy(lmask).to(device)
 
     print('Loading networks from "%s"...' % network_pkl)
-    device = torch.device('cuda')
+    device =  torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    
+    print("The device used is {}" , device)
     with dnnlib.util.open_url(network_pkl) as f:
         # G = legacy.load_network_pkl(f)['G_ema'].to(device) # type: ignore
         G = legacy.load_network_pkl(f, custom=custom, **G_kwargs)['G_ema'].to(device) # type: ignore
+    
+    if not torch.cuda.is_available():
+        G.forward = functools.partial(G.forward, force_fp32=True)
 
     os.makedirs(outdir, exist_ok=True)
 
