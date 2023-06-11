@@ -68,13 +68,14 @@ class _GridSample2dBackward(torch.autograd.Function):
         op = torch._C._jit_get_operation('aten::grid_sampler_2d_backward')
         #DEVELOPERS should kill themselves for this, wtf
         #OLD:
-        #grad_input, grad_grid = op(grad_output, input, grid, 0, 0, False)
+        grad_input, grad_grid = op[0](grad_output, input, grid, 0, 0, False, [True, True])
         #New:
+        '''
         if _use_pytorch_1_11_api:
             output_mask = (ctx.needs_input_grad[1], ctx.needs_input_grad[2])
             grad_input, grad_grid = op(grad_output, input, grid, 0, 0, False, output_mask)
         else:
-            grad_input, grad_grid = op(grad_output, input, grid, 0, 0, False)
+            grad_input, grad_grid = op(grad_output, input, grid, 0, 0, False) '''
 
         ctx.save_for_backward(grid)
         return grad_input, grad_grid
