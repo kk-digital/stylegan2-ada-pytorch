@@ -12,6 +12,7 @@ Only works on 2D images and assumes
 `mode='bilinear'`, `padding_mode='zeros'`, `align_corners=False`."""
 
 import warnings
+from torch import autograd
 import torch
 from pkg_resources import parse_version
 
@@ -62,7 +63,7 @@ class _GridSample2dForward(torch.autograd.Function):
 
 #----------------------------------------------------------------------------
 
-class _GridSample2dBackward(torch.autograd.Function):
+class _GridSample2dBackward(autograd.Function):
     @staticmethod
     def forward(ctx, grad_output, input, grid):
         op = torch._C._jit_get_operation('aten::grid_sampler_2d_backward')
