@@ -66,33 +66,20 @@ class _GridSample2dForward(torch.autograd.Function):
 class _GridSample2dBackward(autograd.Function):
     @staticmethod
     def forward(ctx, grad_output, input, grid):
-        op = torch._C._jit_get_operation('aten::grid_sampler_2d_backward')
-        #DEVELOPERS should kill themselves for this, wtf
-        #OLD:
+        op = torch._C._jit_get_operation("aten::grid_sampler_2d_backward")
         grad_input, grad_grid = op[0](grad_output, input, grid, 0, 0, False, [True, True])
-        #New:
-        '''
-        if _use_pytorch_1_11_api:
-            output_mask = (ctx.needs_input_grad[1], ctx.needs_input_grad[2])
-            grad_input, grad_grid = op(grad_output, input, grid, 0, 0, False, output_mask)
-        else:
-            grad_input, grad_grid = op(grad_output, input, grid, 0, 0, False) '''
-
         ctx.save_for_backward(grid)
+
         return grad_input, grad_grid
 
     @staticmethod
-    def backward(ctx, grad2_grad_input, grad2_grad_grid):
-        _ = grad2_grad_grid # unused
-        grid, = ctx.saved_tensors
-        grad2_grad_output = None
-        grad2_input = None
-        grad2_grid = None
+    def backward(ctx, grad_grad_input, grad_grad_grid):
+        (grid,) = ctx.saved_tensors
+        grad_grad_output = None
 
         if ctx.needs_input_grad[0]:
-            grad2_grad_output = _GridSample2dForward.apply(grad2_grad_input, grid)
+            grad_grad_output = GridSampleForward.apply(grad_grad_input, grid)
 
-        assert not ctx.needs_input_grad[2]
-        return grad2_grad_output, grad2_input, grad2_grid
+        return grad_grad_output, None, None
 
 #----------------------------------------------------------------------------
