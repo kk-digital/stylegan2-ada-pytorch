@@ -12,7 +12,6 @@ Only works on 2D images and assumes
 `mode='bilinear'`, `padding_mode='zeros'`, `align_corners=False`."""
 
 import warnings
-from torch import autograd
 import torch
 from pkg_resources import parse_version
 
@@ -63,23 +62,36 @@ class _GridSample2dForward(torch.autograd.Function):
 
 #----------------------------------------------------------------------------
 
-class _GridSample2dBackward(autograd.Function):
+class _GridSample2dBackward(torch.autograd.Function):
     @staticmethod
     def forward(ctx, grad_output, input, grid):
-        op = torch._C._jit_get_operation("aten::grid_sampler_2d_backward")
+        op = torch._C._jit_get_operation('aten::grid_sampler_2d_backward')
+        #DEVELOPERS should kill themselves for this, wtf
+        #OLD:
         grad_input, grad_grid = op[0](grad_output, input, grid, 0, 0, False, [True, True])
-        ctx.save_for_backward(grid)
+        #New:
+        '''
+        if _use_pytorch_1_11_api:
+            output_mask = (ctx.needs_input_grad[1], ctx.needs_input_grad[2])
+            grad_input, grad_grid = op(grad_output, input, grid, 0, 0, False, output_mask)
+        else:
+            grad_input, grad_grid = op(grad_output, input, grid, 0, 0, False) '''
 
+        ctx.save_for_backward(grid)
         return grad_input, grad_grid
 
     @staticmethod
-    def backward(ctx, grad_grad_input, grad_grad_grid):
-        (grid,) = ctx.saved_tensors
-        grad_grad_output = None
+    def backward(ctx, grad2_grad_input, grad2_grad_grid):
+        _ = grad2_grad_grid # unused
+        grid, = ctx.saved_tensors
+        grad2_grad_output = None
+        grad2_input = None
+        grad2_grid = None
 
         if ctx.needs_input_grad[0]:
-            grad_grad_output = GridSampleForward.apply(grad_grad_input, grid)
+            grad2_grad_output = _GridSample2dForward.apply(grad2_grad_input, grid)
 
-        return grad_grad_output, None, None
+        assert not ctx.needs_input_grad[2]
+        return grad2_grad_output, grad2_input, grad2_grid
 
 #----------------------------------------------------------------------------
